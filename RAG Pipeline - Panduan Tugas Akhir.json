@@ -1,0 +1,242 @@
+{
+  "name": "RAG Pipeline - Panduan Tugas Akhir",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "ce321820-b207-4b8d-a10a-36a29d41a7ba",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "Panduan Penulisan Ilmiah Tugas Akhir Skripsi.pdf",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1FlfuSshU7njtv8nr3a-LXJhAdNfpdwlN",
+            "mode": "list",
+            "cachedResultName": "RAG AI Agent - Tugas Akhir",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1FlfuSshU7njtv8nr3a-LXJhAdNfpdwlN"
+          }
+        },
+        "options": {}
+      },
+      "id": "5f9c0e28-90c1-4898-a271-5b7a045d3e26",
+      "name": "Google Drive - Cari PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        128,
+        48
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "m7CnIxbTJnmvTNa8",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "={{ $json.id }}",
+        "options": {}
+      },
+      "id": "0fc989e3-8d8d-4abd-9529-719df63f2a88",
+      "name": "Google Drive - Download PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        352,
+        48
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "m7CnIxbTJnmvTNa8",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "0c893454-13be-4a4e-8c0a-6ad6f57a1092",
+      "name": "Extract Text dari PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        576,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "id": "82937c25-7487-4a86-835d-bd603149783f",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "5477f9d4-8bd4-4890-9825-085f5ae583fc",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1136,
+        400
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4286d4b6-f8f6-43f7-b0e5-ea3052caa33c",
+      "name": "Embeddings Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        736,
+        256
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "QejIxXdouCP5jgRy",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "documents",
+        "options": {}
+      },
+      "id": "3634bdde-1443-483c-9f3c-8418aa45a7c6",
+      "name": "Supabase Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        832,
+        48
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "DtVUS15GJ1gRdjN8",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Drive - Cari PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive - Cari PDF": {
+      "main": [
+        [
+          {
+            "node": "Google Drive - Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive - Download PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract Text dari PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text dari PDF": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6e51a3a1-6a95-4cba-9083-5fb5be93554d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dc96f10ae7dc95d3c138575ba243a0a167923dbcb524841d451aadf9135d5fb3"
+  },
+  "nodeGroups": [],
+  "id": "Flmod7nfVhmBOf96",
+  "tags": []
+}
